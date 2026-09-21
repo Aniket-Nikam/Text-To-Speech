@@ -28,6 +28,6 @@ services:
       - key: GROQ_MODEL
         value: llama-3.3-70b-versatile
       - key: RATE_LIMIT_MAX
-        value: 20
+        value: 100
       - key: DAILY_GENERATION_LIMIT
         value: 50

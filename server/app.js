@@ -38,7 +38,7 @@ export function createApp({
   app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
   const limiter = rateLimit({
     windowMs: 60000,
-    limit: Number(env.RATE_LIMIT_MAX) || 20,
+    limit: Number(env.RATE_LIMIT_MAX) || 100,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
     handler: (_req, res) =>
