@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: labmentix-tts-api
+    runtime: node
+    plan: free
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start --workspace server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: 24.13.0
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: 1
+      - key: CLIENT_URL
+        sync: false
+      - key: TTS_PROVIDER
+        value: edge
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
+      - key: RATE_LIMIT_MAX
+        value: 20
+      - key: DAILY_GENERATION_LIMIT
+        value: 50

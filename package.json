@@ -1,0 +1,23 @@
+{
+  "name": "labmentix-tts",
+  "private": true,
+  "workspaces": [
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev": "concurrently -n api,web -c green,blue \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w client",
+    "test": "npm run test -w server && npm run test -w client",
+    "check": "npm run build && npm test",
+    "format": "prettier --write client/src server docs README.md",
+    "format:check": "prettier --check client/src server docs README.md"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "^3.9.6"
+  },
+  "engines": {
+    "node": ">=24.13"
+  }
+}

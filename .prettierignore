@@ -1,0 +1,6 @@
+node_modules
+.npm-cache
+client/dist
+package-lock.json
+postman/TTS-API.postman_collection.json
+*.tsbuildinfo
