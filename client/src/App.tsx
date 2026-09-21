@@ -39,34 +39,30 @@ function Shell() {
               </NavLink>
             )}
           </nav>
-          {auth.configured ? (
-            <div className="account-nav">
-              {auth.session ? (
-                <button
-                  className="subtle"
-                  disabled={busy}
-                  onClick={async () => {
-                    setBusy(true);
-                    try {
-                      await auth.signOut();
-                    } catch (e) {
-                      setError(e instanceof Error ? e.message : 'Unable to sign out.');
-                    } finally {
-                      setBusy(false);
-                    }
-                  }}
-                >
-                  {busy ? 'Signing out…' : 'Sign out'}
-                </button>
-              ) : (
-                <Link className="sign-in" to="/login">
-                  Sign in
-                </Link>
-              )}
-            </div>
-          ) : (
-            <span className="header-caption">A little text. A lot of possibility.</span>
-          )}
+          <div className="account-nav">
+            {auth.session ? (
+              <button
+                className="subtle"
+                disabled={busy}
+                onClick={async () => {
+                  setBusy(true);
+                  try {
+                    await auth.signOut();
+                  } catch (e) {
+                    setError(e instanceof Error ? e.message : 'Unable to sign out.');
+                  } finally {
+                    setBusy(false);
+                  }
+                }}
+              >
+                {busy ? 'Signing out…' : 'Sign out'}
+              </button>
+            ) : (
+              <Link className="sign-in" to="/login">
+                Sign in
+              </Link>
+            )}
+          </div>
         </div>
       </header>
       <main id="main" className="main-container">

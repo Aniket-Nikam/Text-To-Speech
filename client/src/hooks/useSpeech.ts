@@ -29,6 +29,7 @@ export function useSpeech() {
     voice: string,
     settings: Settings,
     save: boolean,
+    localSave?: boolean,
   ) {
     if (running.current) return;
     const invalid = validateText(text);
@@ -60,7 +61,7 @@ export function useSpeech() {
         title: text.trim().slice(0, 70),
         historyId: r.headers.get('X-History-Id') || undefined,
       });
-      if (save) {
+      if (localSave ?? save) {
         void saveLocalSpeech({
           text,
           language,

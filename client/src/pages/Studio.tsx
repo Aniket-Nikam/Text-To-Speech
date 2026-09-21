@@ -149,6 +149,7 @@ export default function Studio() {
                   catalog.language,
                   catalog.voice,
                   settings,
+                  !!auth.session && save,
                   save,
                 )
               }
