@@ -26,11 +26,15 @@ export function createApp({
   const origins = (env.CLIENT_URL || 'http://127.0.0.1:5173,http://localhost:5173')
     .split(',')
     .map((s) => s.trim());
+  const allowAll = origins.includes('*');
   app.use(
     cors({
       origin(origin, callback) {
-        if (!origin || origins.includes(origin)) callback(null, true);
-        else callback(new ApiError(403, 'ORIGIN_FORBIDDEN', 'This origin is not allowed.'));
+        if (!origin || allowAll || origins.includes(origin) || origin.endsWith('.vercel.app')) {
+          callback(null, true);
+        } else {
+          callback(new ApiError(403, 'ORIGIN_FORBIDDEN', 'This origin is not allowed.'));
+        }
       },
       exposedHeaders: ['Content-Disposition', 'X-History-Id', 'X-Save-Warning'],
     }),
