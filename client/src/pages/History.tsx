@@ -2,8 +2,16 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Trash, ClockCounterClockwise, Play } from '@phosphor-icons/react';
 import { api, apiFetch } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  getLocalSpeechList,
+  getLocalAudioBlob,
+  deleteLocalSpeech,
+  toggleLocalFavorite,
+} from '../services/localHistory';
 import { ErrorMessage } from '../components/Buttons';
 import { AudioPlayer } from '../components/AudioPlayer';
+
 type Speech = {
   id: string;
   text: string;
@@ -16,7 +24,9 @@ type Speech = {
   created_at: string;
   audio_path: string | null;
 };
+
 export default function History() {
+  const auth = useAuth();
   const [items, setItems] = useState<Speech[]>([]);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [offset, setOffset] = useState(0);
@@ -27,10 +37,24 @@ export default function History() {
   const [busy, setBusy] = useState<string | null>(null);
   const [audio, setAudio] = useState<{ url: string; title: string; id: string } | null>(null);
   const [onlyFavorites, setOnlyFavorites] = useState(false);
+
   useEffect(() => {
     let active = true;
     setLoading(true);
     setError('');
+
+    if (!auth.configured) {
+      const all = getLocalSpeechList();
+      const paged = all.slice(offset, offset + 20);
+      setItems(paged);
+      setTotal(all.length);
+      setFavorites(new Set(all.filter((x) => x.favorite).map((x) => x.id)));
+      setLoading(false);
+      return () => {
+        active = false;
+      };
+    }
+
     Promise.all([
       api<{ items: Speech[]; total: number }>(`/history?offset=${offset}`),
       api<{ favorites: { speech_id: string }[] }>('/favorites'),
@@ -48,16 +72,19 @@ export default function History() {
       .finally(() => {
         if (active) setLoading(false);
       });
+
     return () => {
       active = false;
     };
-  }, [offset, revision]);
+  }, [offset, revision, auth.configured]);
+
   useEffect(
     () => () => {
       if (audio) URL.revokeObjectURL(audio.url);
     },
     [audio],
   );
+
   async function action(id: string, fn: () => Promise<void>) {
     if (busy) return;
     setBusy(id);
@@ -70,7 +97,15 @@ export default function History() {
       setBusy(null);
     }
   }
+
   async function play(item: Speech) {
+    if (!auth.configured || item.id.startsWith('local_')) {
+      const blob = await getLocalAudioBlob(item.id);
+      if (!blob) throw Error('Audio is no longer available in local storage.');
+      setAudio({ url: URL.createObjectURL(blob), title: item.text.slice(0, 70), id: item.id });
+      return;
+    }
+
     const r = await api<{ audioUrl: string }>(`/history/${item.id}/audio`);
     const response = await fetch(r.audioUrl, { signal: AbortSignal.timeout(30000) });
     if (!response.ok) throw Error('This audio is no longer available.');
@@ -78,36 +113,57 @@ export default function History() {
     if (!blob.type.includes('audio/')) throw Error('The stored file is not playable audio.');
     setAudio({ url: URL.createObjectURL(blob), title: item.text.slice(0, 70), id: item.id });
   }
+
   async function remove(item: Speech) {
     if (!window.confirm('Delete this speech and its saved audio? This cannot be undone.')) return;
     await action(item.id, async () => {
-      await apiFetch(`/history/${item.id}`, { method: 'DELETE' });
+      if (!auth.configured || item.id.startsWith('local_')) {
+        await deleteLocalSpeech(item.id);
+      } else {
+        await apiFetch(`/history/${item.id}`, { method: 'DELETE' });
+      }
       if (audio?.id === item.id) setAudio(null);
       if (items.length === 1 && offset > 0) setOffset(Math.max(0, offset - 20));
       else setRevision((r) => r + 1);
     });
   }
+
   async function favorite(item: Speech) {
     await action(item.id, async () => {
-      await apiFetch(favorites.has(item.id) ? `/favorites/${item.id}` : '/favorites', {
-        method: favorites.has(item.id) ? 'DELETE' : 'POST',
-        ...(!favorites.has(item.id) ? { body: JSON.stringify({ speechId: item.id }) } : {}),
-      });
-      setFavorites((previous) => {
-        const next = new Set(previous);
-        if (next.has(item.id)) next.delete(item.id);
-        else next.add(item.id);
-        return next;
-      });
+      if (!auth.configured || item.id.startsWith('local_')) {
+        const isFav = toggleLocalFavorite(item.id);
+        setFavorites((previous) => {
+          const next = new Set(previous);
+          if (isFav) next.add(item.id);
+          else next.delete(item.id);
+          return next;
+        });
+      } else {
+        await apiFetch(favorites.has(item.id) ? `/favorites/${item.id}` : '/favorites', {
+          method: favorites.has(item.id) ? 'DELETE' : 'POST',
+          ...(!favorites.has(item.id) ? { body: JSON.stringify({ speechId: item.id }) } : {}),
+        });
+        setFavorites((previous) => {
+          const next = new Set(previous);
+          if (next.has(item.id)) next.delete(item.id);
+          else next.add(item.id);
+          return next;
+        });
+      }
     });
   }
+
   return (
     <>
       <div className="page-heading">
         <div>
           <div className="eyebrow">YOUR VOICE LIBRARY</div>
           <h1>Speech history.</h1>
-          <p>Your words, ready for another listen. Saved audio is retained for 30 days.</p>
+          <p>
+            {auth.configured
+              ? 'Your words, ready for another listen. Saved audio is retained for 30 days.'
+              : 'Your saved speeches in local storage. Replay or download anytime.'}
+          </p>
         </div>
         <Link className="primary" to="/">
           Create speech

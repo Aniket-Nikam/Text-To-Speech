@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { apiFetch, type Settings } from '../services/api';
 import { validateText } from '../utils/text';
+import { saveLocalSpeech } from '../services/localHistory';
 export function useSpeech() {
   const [audio, setAudio] = useState<{ url: string; title: string; historyId?: string } | null>(
     null,
@@ -59,6 +60,18 @@ export function useSpeech() {
         title: text.trim().slice(0, 70),
         historyId: r.headers.get('X-History-Id') || undefined,
       });
+      if (save) {
+        void saveLocalSpeech({
+          text,
+          language,
+          voice,
+          speed: settings.speed,
+          pitch: settings.pitch,
+          volume: settings.volume,
+          style: settings.style,
+          blob,
+        });
+      }
       setNotice(r.headers.get('X-Save-Warning') || 'Your speech is ready.');
     } catch (e) {
       if (!(e instanceof DOMException && e.name === 'AbortError'))

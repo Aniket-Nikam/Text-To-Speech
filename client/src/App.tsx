@@ -30,11 +30,9 @@ function Shell() {
             <NavLink end className={({ isActive }) => (isActive ? 'nav-active' : '')} to="/">
               Speech studio
             </NavLink>
-            {auth.configured && (
-              <NavLink className={({ isActive }) => (isActive ? 'nav-active' : '')} to="/history">
-                History
-              </NavLink>
-            )}
+            <NavLink className={({ isActive }) => (isActive ? 'nav-active' : '')} to="/history">
+              History
+            </NavLink>
             {auth.admin && (
               <NavLink className={({ isActive }) => (isActive ? 'nav-active' : '')} to="/admin">
                 Admin
@@ -79,9 +77,13 @@ function Shell() {
           <Route
             path="/history"
             element={
-              <ProtectedRoute>
+              auth.configured ? (
+                <ProtectedRoute>
+                  <History />
+                </ProtectedRoute>
+              ) : (
                 <History />
-              </ProtectedRoute>
+              )
             }
           />
           <Route

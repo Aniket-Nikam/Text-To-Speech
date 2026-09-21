@@ -21,7 +21,7 @@ export default function Studio() {
   const [text, setText] = useState('');
   const [settings, setSettings] = useState({ ...defaults });
   const auth = useAuth();
-  const [save, setSave] = useState(false);
+  const [save, setSave] = useState(true);
   const catalog = useVoices();
   const speech = useSpeech();
   const selected = catalog.voices.find((v) => v.id === catalog.voice);
@@ -138,12 +138,10 @@ export default function Studio() {
               onChange={setSettings}
               styles={selected?.styles || []}
             />
-            {auth.session && (
-              <label className="check-field save-option">
-                <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
-                Save to my history
-              </label>
-            )}
+            <label className="check-field save-option">
+              <input type="checkbox" checked={save} onChange={(e) => setSave(e.target.checked)} />
+              Save to my history
+            </label>
             <GenerateButton
               onClick={() =>
                 void speech.generate(
@@ -151,7 +149,7 @@ export default function Studio() {
                   catalog.language,
                   catalog.voice,
                   settings,
-                  !!auth.session && save,
+                  save,
                 )
               }
               busy={speech.busy}
